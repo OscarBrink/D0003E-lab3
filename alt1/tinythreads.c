@@ -1,6 +1,7 @@
 #include <setjmp.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "avrinit.h"
 #include "tinythreads.h"
 #include "avrprint.h" // TODO rm testing
 
@@ -12,7 +13,6 @@
 #define SETSTACK(buf,a) *((uint16_t *)(buf)+8) = (uint16_t)(a) + STACKSIZE - 4; \
                         *((uint16_t *)(buf)+9) = (uint16_t)(a) + STACKSIZE - 4
 
-#define TCYCLES         391  // 8 M / 1024 / (50 / 1000) = 390.625
 
 struct thread_block {
     void (*function)(uint8_t);   // code to run
@@ -30,45 +30,22 @@ thread freeQ   = threads;
 thread readyQ  = NULL;
 thread current = &initp;
 
+mutex m = MUTEX_INIT;
+
 uint8_t initialized = 0;
 uint8_t joyDown = 0;
-
-static void initInt(void) {
-
-    // Port B pins alternate functions
-    PORTB   |= (1<<PB7) // "Activate" down input from joystick (Pin Change INT15)
-            | (1<<PB5); // Output Compare Match A output (Timer/counter1)
-
-    // Port B Data Direction Register
-    //DDRB = (1<<DDB5);   // Configure pin as output (Timer/counter1)
-
-    // External Interrupt Mask Register
-    //EIMSK = (1<<PCIE1); // Pin Change Interrupt Enable for PCINT15..8
-
-    // Pin Change Mask Register for PCINT15..8
-    //PCMSK1 = (1<<PCINT15); // Pin change interrupt enabled for Port B7
-
-    // Timer/Counter1 Interrupt Mask Register
-    TIMSK1 = (1<<OCIE1A); // Output Compare A Match Interrupt Enable
-
-    // Timer/Counter1 Control Register B
-    TCCR1B =  (1<<CS12) | (1<<CS10) // System clk with 1024 prescaler factor 
-            | (1<<WGM12);           // Clear Timer on Compare mode for OCR1A
-}
+uint16_t timerInterruptCounter = 0;
 
 
 static void initialize(void) {
+
+    initializeAVR();
+
     int i;
     for (i=0; i<NTHREADS-1; i++)
         threads[i].next = &threads[i+1];
     threads[NTHREADS-1].next = NULL;
 
-    initInt();
-
-    // Set Output Compare Register A
-    OCR1A = TCYCLES;
-
-    TCNT1 = 0; // clear system clk
 
     initialized = 1;
 }
@@ -159,6 +136,16 @@ void unlock(mutex *m) {
     ENABLE();
 }
 
+uint16_t rtic() {
+    DISABLE();
+    uint16_t old = timerInterruptCounter;
+    timerInterruptCounter = 0;
+    ENABLE();
+    return old;
+}
+
+
+/* Joy down input interrupt */
 ISR(PCINT1_vect) {
     DISABLE();
     if (!joyDown) {
@@ -166,10 +153,13 @@ ISR(PCINT1_vect) {
         yield();
     } else if (joyDown) {
         joyDown = 0;
+        ENABLE();
     }
 }
 
+/* Timer interrupt */
 ISR(TIMER1_COMPA_vect) {
+    timerInterruptCounter++;
     yield();
 }
 

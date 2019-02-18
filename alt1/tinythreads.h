@@ -24,5 +24,8 @@ typedef struct mutex_block mutex;
 void lock(mutex *m);
 void unlock(mutex *m);
 
+
+uint16_t rtic(void);
+
 #endif
 

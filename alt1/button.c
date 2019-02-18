@@ -1,29 +1,23 @@
 #include "button.h"
-#include "primes.h"
+#include "avrprint.h"
 
+uint8_t timesPressed = 0;
 
-uint16_t button(void) {
+void button(uint8_t pos) {
 
     LCDDR1 = 0x20; // Set initial state
-
-    initIO();
+    printAt(timesPressed, pos);
 
     while (1) {
         while (PINB & (1<<PINB7)); // busy wait until input
-        changeState();
+        changeState(pos);
         while ( !(PINB & (1<<PINB7)) ); // busy wait until joystick is released
     }
 
-    return 0;
 }
 
-void changeState(void) {
-    LCDDR1 = (LCDDR1 ^ 0x60);
-}
-
-
-void initIO(void) {
-    // "Activate" down input from joystick (bit 7 in PORTB)
-    PORTB = (1<<PB7);
+void changeState(uint8_t pos) {
+    printAt(++timesPressed, pos);
+    LCDDR1 ^= 0x60;
 }
 

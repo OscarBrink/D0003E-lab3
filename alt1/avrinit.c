@@ -1,4 +1,13 @@
 #include "avrinit.h"
+#include "avrprint.h"
+
+void initializeAVR(void) {
+    initCPU();
+    initLCD();
+    initInput();
+    initInt();
+    initClk();
+}
 
 
 /*
@@ -40,8 +49,17 @@ void initLCD(void) {
  * Initializes the 8 Mhz clock
  */
 void initClk(void) {
+    // Port B pins alternate functions
+    PORTB |= (1<<PB5); // Output Compare Match A output (Timer/counter1)
+
     // Timer/Counter1 Control Register B
-    TCCR1B = (1<<CS12); // System clk with 256 prescaler factor
+    TCCR1B =  (1<<CS12) | (1<<CS10) // System clk with 1024 prescaler factor 
+            | (1<<WGM12);           // Clear Timer on Compare mode for OCR1A
+
+    // Set Output Compare Register A
+    OCR1A = TCYCLES;
+
+    TCNT1 = 0; // clear system clk
 }
 
 
@@ -49,8 +67,21 @@ void initClk(void) {
  * Initializes input
  */
 void initInput(void) {
-    // "Activate" down input from joystick (bit 7 in PORTB)
-    PORTB |= (1<<PB7);
-
+    // Port B pins alternate functions
+    PORTB |= (1<<PB7); // "Activate" down input from joystick (Pin Change INT15)
 }
 
+void initInt(void) {
+
+    // Timer/Counter1 Interrupt Mask Register
+    TIMSK1 = (1<<OCIE1A); // Output Compare A Match Interrupt Enable
+
+    // Port B Data Direction Register
+    //DDRB = (1<<DDB5);   // Configure pin as external output (Timer/counter1)
+
+    // External Interrupt Mask Register
+    //EIMSK = (1<<PCIE1); // Pin Change Interrupt Enable for PCINT15..8
+
+    // Pin Change Mask Register for PCINT15..8
+    //PCMSK1 = (1<<PCINT15); // Pin change interrupt enabled for Port B7
+}
