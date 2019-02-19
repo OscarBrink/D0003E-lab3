@@ -4,8 +4,6 @@
 void printAt(uint32_t num, uint8_t pos) {
     uint8_t pp = pos;
     writeChar( (num % 100) / 10 + '0', pp);
-    //int i;
-    //for (i = 0; i<50000; i++);
     pp++;
     writeChar( num % 10 + '0', pp);
 }
@@ -44,9 +42,9 @@ uint8_t writeChar(char ch, int pos) {
         return 1;
     }
 
-    //if ( (ch < '0' || ch > '9') && ch != '\0' ) {
-    //    return 1;
-    //}
+    if ( (ch < '0' || ch > '9') && ch != '\0' ) {
+        return 1;
+    }
     
     // Determine LCD-segments to activate
     uint8_t segmentMap[4];

@@ -4,7 +4,7 @@
 #define CLKPERIOD 3906 // (8 M / 1024) / 2 = 3906.25
 
 // 8 MHz clock
-// 256 Prescaling
+// 1024 Prescaling
 uint16_t blink(void) {
 
     uint16_t nextStateChange = CLKPERIOD;
