@@ -11,6 +11,7 @@ void computePrimes(uint8_t pos);
 
 int main(void) {
     spawn(blink, 0);
+    button(4);
     computePrimes(0);
 
     return 0;

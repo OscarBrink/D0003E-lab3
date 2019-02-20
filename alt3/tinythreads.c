@@ -48,13 +48,11 @@ static void initialize(void) {
 }
 
 
-static void push(thread p, thread *queue) {
+static void enqueue(thread p, thread *queue) {
     p->next = *queue;
     *queue = p;
-}
 
-
-static void enqueue(thread p, thread *queue) {
+    /*
     p->next = NULL;
     if (*queue == NULL) {
         *queue = p;
@@ -64,6 +62,7 @@ static void enqueue(thread p, thread *queue) {
             q = q->next;
         q->next = p;
     }
+    */
 }
 
 
@@ -105,15 +104,16 @@ void spawn(void (* function)(uint8_t), uint8_t arg) {
     }
     SETSTACK(&newp->context, &newp->stack);
 
-    push(newp, &readyQ);
+    enqueue(newp, &readyQ);
     ENABLE();
 }
 
 
 void yield(void) {
     DISABLE();
-    enqueue(current, &readyQ);  // Add current back to normal queue
-    dispatch(dequeue(&readyQ)); // Dispatch next thread
+    thread next = dequeue(&readyQ); // Pop next
+    enqueue(current, &readyQ);  // Push current back to normal queue
+    dispatch(next); // Dispatch next thread
     ENABLE();
 }
 
